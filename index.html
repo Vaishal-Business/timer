@@ -125,7 +125,7 @@ body {
 <audio id="completion-sound" src="./alarm.mp3" preload="auto"></audio>
 <script>
 class SCATimer {
-    constructor(){
+    constructor() {
         this.hoursEl = document.getElementById('hours');
         this.minutesEl = document.getElementById('minutes');
         this.secondsEl = document.getElementById('seconds');
@@ -135,155 +135,167 @@ class SCATimer {
         this.pauseBtn = document.getElementById('pause-btn');
         this.resetBtn = document.getElementById('reset-btn');
         this.titleEl = document.getElementById('main-title');
+        this.audioEl = document.getElementById('completion-sound');
 
-        this.remainingTime = this.getTotalSeconds();
         this.isRunning = false;
         this.interval = null;
+
+        // ensure initial totalSeconds is valid
+        this.remainingTime = this.getTotalSeconds();
 
         this.bindEvents();
         this.updateDisplay();
         this.updatePhase();
     }
 
-    getTotalSeconds(){
-        const h = parseInt(this.hoursEl.textContent);
-        const m = parseInt(this.minutesEl.textContent);
-        const s = parseInt(this.secondsEl.textContent);
-        return h*3600 + m*60 + s;
+    getTotalSeconds() {
+        let h = parseInt(this.hoursEl.textContent) || 0;
+        let m = parseInt(this.minutesEl.textContent) || 0;
+        let s = parseInt(this.secondsEl.textContent) || 0;
+        return h * 3600 + m * 60 + s;
     }
 
-    bindEvents(){
+    bindEvents() {
         // arrows
-        document.getElementById('hour-up').addEventListener('click',()=>this.adjustTime('hours',1));
-        document.getElementById('hour-down').addEventListener('click',()=>this.adjustTime('hours',-1));
-        document.getElementById('minute-up').addEventListener('click',()=>this.adjustTime('minutes',1));
-        document.getElementById('minute-down').addEventListener('click',()=>this.adjustTime('minutes',-1));
-        document.getElementById('second-up').addEventListener('click',()=>this.adjustTime('seconds',1));
-        document.getElementById('second-down').addEventListener('click',()=>this.adjustTime('seconds',-1));
+        document.getElementById('hour-up').addEventListener('click', () => this.adjustTime('hours', 1));
+        document.getElementById('hour-down').addEventListener('click', () => this.adjustTime('hours', -1));
+        document.getElementById('minute-up').addEventListener('click', () => this.adjustTime('minutes', 1));
+        document.getElementById('minute-down').addEventListener('click', () => this.adjustTime('minutes', -1));
+        document.getElementById('second-up').addEventListener('click', () => this.adjustTime('seconds', 1));
+        document.getElementById('second-down').addEventListener('click', () => this.adjustTime('seconds', -1));
 
         // controls
-        this.startBtn.addEventListener('click',()=>this.start());
-        this.pauseBtn.addEventListener('click',()=>this.pause());
-        this.resetBtn.addEventListener('click',()=>this.reset());
+        this.startBtn.addEventListener('click', () => this.start());
+        this.pauseBtn.addEventListener('click', () => this.pause());
+        this.resetBtn.addEventListener('click', () => this.reset());
     }
 
-    adjustTime(unit, delta){
-        if(this.isRunning) return;
-        let h=parseInt(this.hoursEl.textContent);
-        let m=parseInt(this.minutesEl.textContent);
-        let s=parseInt(this.secondsEl.textContent);
+    adjustTime(unit, delta) {
+        if (this.isRunning) return;
 
-        if(unit==='hours') h=Math.max(0, Math.min(99, h+delta));
-        if(unit==='minutes'){
-            m+=delta;
-            if(m<0){ m=59; h=Math.max(0,h-1);}
-            if(m>59){ m=0; h=Math.min(99,h+1);}
+        let h = parseInt(this.hoursEl.textContent);
+        let m = parseInt(this.minutesEl.textContent);
+        let s = parseInt(this.secondsEl.textContent);
+
+        if (unit === 'hours') h = Math.max(0, Math.min(99, h + delta));
+        if (unit === 'minutes') {
+            m += delta;
+            if (m < 0) { m = 59; h = Math.max(0, h - 1); }
+            if (m > 59) { m = 0; h = Math.min(99, h + 1); }
         }
-        if(unit==='seconds'){
-            s+=delta;
-            if(s<0){ s=59; m=Math.max(0,m-1); if(m<0){m=59; h=Math.max(0,h-1);} }
-            if(s>59){ s=0; m=Math.min(59,m+1); if(m===0 && s===0){ h=Math.min(99,h+1); } }
+        if (unit === 'seconds') {
+            s += delta;
+            if (s < 0) { s = 59; m -= 1; if (m < 0) { m = 59; h = Math.max(0, h - 1); } }
+            if (s > 59) { s = 0; m += 1; if (m > 59) { m = 0; h = Math.min(99, h + 1); } }
         }
 
-        this.hoursEl.textContent=h.toString().padStart(2,'0');
-        this.minutesEl.textContent=m.toString().padStart(2,'0');
-        this.secondsEl.textContent=s.toString().padStart(2,'0');
+        this.hoursEl.textContent = h.toString().padStart(2, '0');
+        this.minutesEl.textContent = m.toString().padStart(2, '0');
+        this.secondsEl.textContent = s.toString().padStart(2, '0');
 
         this.remainingTime = this.getTotalSeconds();
         this.updateDisplay();
         this.updatePhase();
     }
 
-    start(){
-        if(this.isRunning) return;
+    start() {
+        if (this.isRunning || this.remainingTime <= 0) return;
+
         this.isRunning = true;
         this.startBtn.disabled = true;
         this.pauseBtn.disabled = false;
-        this.titleEl.textContent="Time Left";
+        this.titleEl.textContent = "Time Left";
 
-        this.interval = setInterval(()=>{
+        this.interval = setInterval(() => {
             this.remainingTime--;
-            if(this.remainingTime<=0){
+            if (this.remainingTime <= 0) {
                 this.completeTimer();
                 return;
             }
             this.updateDisplay();
             this.updatePhase();
 
-            if(this.remainingTime<=10){
-                this.timerEl.classList.toggle('warning');
+            if (this.remainingTime <= 10) {
+                this.timerEl.classList.add('warning');
             }
-        },1000);
+        }, 1000);
     }
 
-    pause(){
-        if(!this.isRunning) return;
+    pause() {
+        if (!this.isRunning) return;
         clearInterval(this.interval);
-        this.isRunning=false;
-        this.startBtn.disabled=false;
-        this.pauseBtn.disabled=true;
-        this.titleEl.textContent="Paused";
+        this.isRunning = false;
+        this.startBtn.disabled = false;
+        this.pauseBtn.disabled = true;
+        this.titleEl.textContent = "Paused";
         this.timerEl.classList.remove('warning');
         this.updatePhase();
     }
 
-    reset(){
+    reset() {
         clearInterval(this.interval);
-        this.isRunning=false;
+        this.isRunning = false;
         this.remainingTime = this.getTotalSeconds();
         this.updateDisplay();
-        this.titleEl.textContent="Timer";
+        this.titleEl.textContent = "Timer";
         this.timerEl.classList.remove('warning');
-        this.phaseEl.textContent='';
-        this.startBtn.disabled=false;
-        this.pauseBtn.disabled=true;
+        this.phaseEl.textContent = '';
+        this.startBtn.disabled = false;
+        this.pauseBtn.disabled = true;
     }
 
-    completeTimer(){
+    completeTimer() {
         clearInterval(this.interval);
-        this.remainingTime=0;
+        this.remainingTime = 0;
         this.updateDisplay();
-        this.titleEl.textContent="Complete!";
-        this.phaseEl.textContent="Timer Complete!";
+        this.titleEl.textContent = "Complete!";
+        this.phaseEl.textContent = "Timer Complete!";
         this.blinkTimer();
         this.playSound();
     }
 
-    blinkTimer(){
-        let count=0;
-        const blink=setInterval(()=>{
+    blinkTimer() {
+        let count = 0;
+        const blink = setInterval(() => {
             this.timerEl.classList.toggle('warning');
             count++;
-            if(count>=10){ clearInterval(blink); this.timerEl.classList.remove('warning'); }
-        },500);
+            if (count >= 10) {
+                clearInterval(blink);
+                this.timerEl.classList.remove('warning');
+            }
+        }, 500);
     }
 
-    updateDisplay(){
-        let h = Math.floor(this.remainingTime/3600);
-        let m = Math.floor((this.remainingTime%3600)/60);
-        let s = this.remainingTime%60;
-        this.timerEl.textContent=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    updateDisplay() {
+        const h = Math.floor(this.remainingTime / 3600);
+        const m = Math.floor((this.remainingTime % 3600) / 60);
+        const s = this.remainingTime % 60;
+        this.timerEl.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
     }
 
-    updatePhase(){
-        const now=new Date();
-        const end=new Date(now.getTime()+this.remainingTime*1000);
-        let h=end.getHours();
-        let m=end.getMinutes();
-        let ampm=h>=12?'PM':'AM';
-        let displayH=h%12||12;
-        this.phaseEl.textContent=`Ends at: ${displayH.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')} ${ampm}`;
+    updatePhase() {
+        if (this.remainingTime <= 0) {
+            this.phaseEl.textContent = '';
+            return;
+        }
+        const now = new Date();
+        const end = new Date(now.getTime() + this.remainingTime * 1000);
+        let h = end.getHours();
+        let m = end.getMinutes();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const displayH = h % 12 || 12;
+        this.phaseEl.textContent = `Ends at: ${displayH.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')} ${ampm}`;
     }
 
     playSound() {
-    const audio = document.getElementById('completion-sound');
-    if(audio){
-        audio.currentTime = 0; // rewind to start
-        audio.play();
+        if (!this.audioEl) return;
+        this.audioEl.currentTime = 0;
+        this.audioEl.play().catch(()=>{}); // avoid errors if blocked
     }
 }
 
-document.addEventListener('DOMContentLoaded',()=>{ new SCATimer(); });
+document.addEventListener('DOMContentLoaded', () => new SCATimer());
+
 </script>
 
 </body>
